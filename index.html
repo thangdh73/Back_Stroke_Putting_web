@@ -14,8 +14,8 @@
 <h2>Backstroke Length Predictor</h2>
 <label>Direction:</label>
 <select id="direction">
-  <option value="downhill">Downhill</option>
-  <option value="uphill">Uphill</option>
+  <option value="Downhill">Downhill</option>
+  <option value="Uphill">Uphill</option>
 </select>
 <br>
 <label for="stimp">Stimp (ft):</label>
@@ -32,47 +32,41 @@
 <div class="warn" id="warning"></div>
 
 <script>
-// Map direction and Stimp to CSV file names
-const stimpSheets = {
-  "downhill": [
-    {label: "Stimp 8.86", file: "Stimp_2.7_Downhill.csv", stimp: 2.7*3.28084},
-    {label: "Stimp 9.51", file: "Stimp_2.9_Downhill.csv", stimp: 2.9*3.28084},
-    {label: "Stimp 9.84", file: "Stimp_3.0_Downhill.csv", stimp: 3.0*3.28084},
-  ],
-  "uphill": [
-    {label: "Stimp 8.86", file: "Stimp_2.7_Uphill.csv", stimp: 2.7*3.28084},
-    {label: "Stimp 9.51", file: "Stimp_2.9_Uphill.csv", stimp: 2.9*3.28084},
-    {label: "Stimp 9.84", file: "Stimp_3.0_Uphill.csv", stimp: 3.0*3.28084},
-  ]
-};
+// List all available stimp values. 2.7, 2.9, 3.0, 3.2, ... 4.6 (edit if you add more)
+const stimpVals = [2.7, 2.9, 3.0, 3.2, 3.4, 3.5, 3.7, 4.1, 4.3, 4.4, 4.6];
+
+function stimpToFt(stimp) {
+  return (stimp * 3.28084).toFixed(2);
+}
 
 let tableData = {};
 let currentCSV = null;
 
-// Fill Stimp options based on direction
+// Fill Stimp options
 function updateStimpOptions() {
-  let dir = document.getElementById('direction').value;
   let stimpSel = document.getElementById('stimp');
   stimpSel.innerHTML = '';
-  stimpSheets[dir].forEach((item, idx) => {
+  stimpVals.forEach(val => {
     let opt = document.createElement('option');
-    opt.value = idx;
-    opt.text = item.label + ` (${item.stimp.toFixed(2)} ft)`;
+    opt.value = val;
+    opt.text = `${val} m  (${stimpToFt(val)} ft)`;
     stimpSel.appendChild(opt);
   });
   loadCSV();
 }
 
-document.getElementById('direction').addEventListener('change', updateStimpOptions);
+document.getElementById('direction').addEventListener('change', loadCSV);
 document.getElementById('stimp').addEventListener('change', loadCSV);
 
 function loadCSV() {
-  let dir = document.getElementById('direction').value;
-  let idx = document.getElementById('stimp').value;
-  let file = stimpSheets[dir][idx].file;
-
+  let dir = document.getElementById('direction').value; // Downhill/Uphill
+  let stimp = document.getElementById('stimp').value;   // e.g. 2.7
+  let file = `Stimp_${stimp}_${dir}.csv`;
   fetch(file)
-    .then(resp => resp.text())
+    .then(resp => {
+      if (!resp.ok) throw new Error("File not found: " + file);
+      return resp.text();
+    })
     .then(data => {
       tableData = parseCSV(data);
       document.getElementById('output').textContent = '';
@@ -81,6 +75,7 @@ function loadCSV() {
     .catch(() => {
       document.getElementById('output').textContent = '';
       document.getElementById('warning').textContent = 'CSV not found. Make sure your file is present.';
+      tableData = {};
     });
 }
 
@@ -147,7 +142,7 @@ updateStimpOptions();
 </script>
 <p style="font-size:small;color:#888;margin-top:2em;">
   <b>Note:</b> You must export each Uphill/Downhill + Stimp sheet from Excel as a CSV in the same folder.<br>
-  Example: <code>stimp_2.9_downhill.csv</code>. Table must have Putt Length (m) as first column and slope elevations as column headers.<br>
+  Example: <code>Stimp_2.9_Downhill.csv</code>. Table must have Putt Length (m) as first column and slope elevations as column headers.<br>
   <b>App is 100% browser-based – no backend, no server required.</b>
 </p>
 </body>
